@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: cdc_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      -redis_data:/redis_data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+  
+  cdc-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cdc_engine_app
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./data:/app/data
+      - ./src:/app/src
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  redis_data:
